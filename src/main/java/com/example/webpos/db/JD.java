@@ -1,6 +1,5 @@
 package com.example.webpos.db;
 
-import com.example.webpos.model.Cart;
 import com.example.webpos.model.Product;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

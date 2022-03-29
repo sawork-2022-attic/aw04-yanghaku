@@ -1,6 +1,5 @@
 package com.example.webpos.model;
 
-import lombok.Data;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
@@ -8,7 +7,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
 @Component
 @SessionScope
 public class Cart implements Serializable {
@@ -17,6 +15,35 @@ public class Cart implements Serializable {
 
     public boolean addItem(Item item) {
         return items.add(item);
+    }
+
+    public void clear() {
+        items.clear();
+    }
+
+    public void deleteItem(String productId) {
+        for (int i = 0; i < items.size(); ++i) {
+            if (items.get(i).getProduct().getId().equals(productId)) {
+                items.remove(i);
+                break;
+            }
+        }
+    }
+
+    public void modifyItem(String productId, int amount) {
+        for (int i = 0; i < items.size(); ++i) {
+            if (items.get(i).getProduct().getId().equals(productId)) {
+                items.get(i).setQuantity(amount);
+            }
+        }
+    }
+
+    public List<Item> getItems() {
+        return items;
+    }
+
+    public void setItems(List<Item> items) {
+        this.items = items;
     }
 
     public double getTotal() {

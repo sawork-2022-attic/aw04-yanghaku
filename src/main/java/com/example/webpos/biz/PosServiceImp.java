@@ -22,7 +22,6 @@ public class PosServiceImp implements PosService, Serializable {
         this.posDB = posDB;
     }
 
-
     @Override
     public Product randomProduct() {
         return products().get(ThreadLocalRandom.current().nextInt(0, products().size()));
@@ -42,7 +41,8 @@ public class PosServiceImp implements PosService, Serializable {
     public Cart add(Cart cart, String productId, int amount) {
 
         Product product = posDB.getProduct(productId);
-        if (product == null) return cart;
+        if (product == null)
+            return cart;
 
         cart.addItem(new Item(product, amount));
         return cart;
