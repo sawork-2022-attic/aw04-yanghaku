@@ -7,7 +7,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,15 +14,14 @@ import java.util.List;
 @Repository
 public class JD implements PosDB {
 
-
     private List<Product> products = null;
 
     @Override
     public List<Product> getProducts() {
         try {
-            if (products == null)
+            if (products == null || products.isEmpty())
                 products = parseJD("Java");
-        } catch (IOException e) {
+        } catch (Exception e) {
             products = new ArrayList<>();
         }
         return products;
@@ -39,22 +37,21 @@ public class JD implements PosDB {
         return null;
     }
 
-    public static List<Product> parseJD(String keyword) throws IOException {
-        //获取请求https://search.jd.com/Search?keyword=java
+    public static List<Product> parseJD(String keyword) throws Exception { // 改成Exception是为了document的空指针错误的时候也能被捕获到而不是返回500
+        // 获取请求https://search.jd.com/Search?keyword=java
         String url = "https://search.jd.com/Search?keyword=" + keyword;
-        //解析网页
+        // 解析网页
         Document document = Jsoup.parse(new URL(url), 10000);
-        //所有js的方法都能用
+        // 所有js的方法都能用
         Element element = document.getElementById("J_goodsList");
-        //获取所有li标签
+        // 获取所有li标签
         Elements elements = element.getElementsByTag("li");
-//        System.out.println(element.html());
+        // System.out.println(element.html());
         List<Product> list = new ArrayList<>();
 
-        //获取元素的内容
-        for (Element el : elements
-        ) {
-            //关于图片特别多的网站，所有图片都是延迟加载的
+        // 获取元素的内容
+        for (Element el : elements) {
+            // 关于图片特别多的网站，所有图片都是延迟加载的
             String id = el.attr("data-spu");
             String img = "https:".concat(el.getElementsByTag("img").eq(0).attr("data-lazy-img"));
             String price = el.getElementsByAttribute("data-price").text();
@@ -66,6 +63,8 @@ public class JD implements PosDB {
 
             list.add(product);
         }
+        // 显式等待两秒作为延迟
+        Thread.sleep(2000);
         return list;
     }
 

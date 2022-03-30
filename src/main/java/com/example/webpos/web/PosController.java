@@ -50,7 +50,13 @@ public class PosController {
     @GetMapping("/modify")
     public String modify(Model model, @RequestParam("id") String productId,
             @RequestParam(value = "amount") Integer amount) {
-        cart.modifyItem(productId, amount);
+        if (amount == null)
+            return refreshModel(model);
+        if (amount <= 0) {
+            cart.deleteItem(productId);
+        } else {
+            cart.modifyItem(productId, amount);
+        }
         return refreshModel(model);
     }
 

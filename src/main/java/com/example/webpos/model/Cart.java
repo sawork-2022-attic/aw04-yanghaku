@@ -14,6 +14,12 @@ public class Cart implements Serializable {
     private List<Item> items = new ArrayList<>();
 
     public boolean addItem(Item item) {
+        for (int i = 0; i < items.size(); ++i) { // if exist, just add to it
+            if (items.get(i).getProduct().getId().equals(item.getProduct().getId())) {
+                items.get(i).setQuantity(items.get(i).getQuantity() + item.getQuantity());
+                return true;
+            }
+        }
         return items.add(item);
     }
 
