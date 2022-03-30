@@ -2,76 +2,182 @@
 
 SHELL_FOLDER=$(dirname $(readlink -f "$0"))
 
-cached_docker_compose_file="$SHELL_FOLDER/docker-compose-cached.yml"
-uncached_docker_compose_file="$SHELL_FOLDER/docker-compose-uncached.yml"
-
-docker_compose_yml_file=$cached_docker_compose_file # 默认开启的是带缓存版本的集群
+# 配置文件常量
+redis_yml_file="$SHELL_FOLDER/docker-compose-redis.yml"
+web_yml_file="$SHELL_FOLDER/docker-compose-web.yml"
 haproxy_template_cfg="$SHELL_FOLDER/haproxy-template.cfg"
 haproxy_cfg="$SHELL_FOLDER/haproxy.cfg"
+redis_conf_file="$SHELL_FOLDER/redis.conf"
 
-# 解析第一个参数, 水平扩展的个数
-if [ ! -n "$1" ] || [ -z $1 ]; then
-	echo "usage run.sh scale_number [true/false]"
-	exit 0
+# 检查配置文件是否存在
+if [ ! -f "$haproxy_template_cfg" ];then
+	echo "file $haproxy_template_cfg not exist"
+	exit -1
+fi
+if [ ! -f "$redis_yml_file" ];then
+	echo "file $redis_yml_file not exist"
+	exit -1
+fi
+if [ ! -f "$web_yml_file" ];then
+	echo "file $web_yml_file not exist"
+	exit -1
 fi
 
-expr $1 "+" 0 &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "scale_number must be a number"
-	exit 0
-elif [ $1 -le 0 ]; then
-	echo "scale_number must greater than 0"
-	exit 0
-fi
+# 解析参数 (redis=, web=, cache=)   默认值: (redis=1, web=1, cache=false)
+redis_num=1
+web_num=1
+cache_enable="false"
 
-# 解析第二个参数, 是否开启缓存的版本. (默认是true)
-if [ -n "$2" ] && [ ! -z "$2" ]; then
-	if [ "$2" == "false" ]; then
-		docker_compose_yml_file=$uncached_docker_compose_file
-	elif [ "$2" == "true" ]; then
-		docker_compose_yml_file=$cached_docker_compose_file
+print_help(){
+	echo "usage $0 [redis=number] [web=number] [cache=true/false]"
+	echo "default value: redis=1, web=1, cache=false"
+	exit -1
+}
+
+# 开始解析
+for arg in $*; do
+	if [ "${arg:0:3}" == "web" ]; then	# parse the web
+		val=${arg##*=}
+		if [ ! -n "$val" ] || [ -z $val ]; then
+			echo "scale_number for web cannot be null"
+			print_help
+		fi
+		expr $val "+" 0 &> /dev/null
+		if [ $? -ne 0 ]; then
+			echo "scale_number for web must be a number"
+			print_help
+		elif [ $val -le 0 ]; then
+			echo "scale_number for web must greater than 0"
+			print_help
+		fi
+		web_num=$val
+
+	elif [ "${arg:0:5}" == "redis" ]; then	# parse the redis
+		val=${arg##*=}
+		if [ ! -n "$val" ] || [ -z $val ]; then
+			echo "scale_number for redis cannot be null"
+			print_help
+		fi
+		expr $val "+" 0 &> /dev/null
+		if [ $? -ne 0 ]; then
+			echo "scale_number for redis must be a number"
+			print_help
+		elif [ $val -le 0 ]; then
+			echo "scale_number for redis must greater than 0"
+			print_help
+		fi
+		redis_num=$val
+
+	elif [ "${arg:0:5}" == "cache" ]; then  # parse the cache
+		val=${arg##*=}
+		if [ "$val" != "true" ] && [ "$val" != "false" ]; then
+			echo "cache value must be true or false"
+			print_help
+		else
+			cache_enable=$val
+		fi
+
 	else
-		echo "usage run.sh scale_number [true/false]"
-		exit 0
+		echo "invalid argmuent $arg"
+		print_help
 	fi
-fi
+
+done
+
+# todo: delete it
+redis_num=1
+
+echo "parse success! (redis=$redis_num, web=$web_num, cache=$cache_enable)"
 
 
-scale=$1
-echo "scale number is $scale"
-
-echo "docker-compose file is $docker_compose_yml_file"
-docker_compose="docker-compose -f $docker_compose_yml_file"
-
-echo "start docker compose"
-$docker_compose up -d --scale webpos=$scale
-if [ $? -ne 0 ]; then
-	echo "docker-compose up fail"
-	exit 1
-else
-	echo "docker-compose up success"
-	$docker_compose ps
-fi
-
-# 指定捕获ctrl+c, 完成清理工作
+# 注册信号, 捕获ctrl+c, 完成清理工作
 trap 'SIGINT_handler' INT
 SIGINT_handler(){
 	echo -e "\nquit"
-	$docker_compose down
-	rm -f $haproxy_cfg
+
+	export COMPOSE_PROJECT_NAME="webpos_redis"
+	export COMPOSE_FILE=$redis_yml_file
+	docker-compose down
+
+	export COMPOSE_PROJECT_NAME="webpos_web"
+	export COMPOSE_FILE=$web_yml_file
+	docker-compose down
+
+	if [ -f $haproxy_cfg ]; then
+		rm -f $haproxy_cfg
+	fi
 	exit 0
 }
 
-# 根据扩展个数生成相应的haproxy的配置文件
+#------------------------------------------------启动redis集群-----------------------
+echo "creating redis cluster"
 
-if [ ! -f "$haproxy_template_cfg" ];then
-	echo "file $haproxy_template_cfg not exist"
-	SIGINT_handler
-fi
+# 设置部署的集群的名称前缀和使用的配置文件
+export COMPOSE_PROJECT_NAME="webpos_redis"
+export COMPOSE_FILE=$redis_yml_file
 
+# 设置redis的yml的环境变量
+export REDIS_CONF=$redis_conf_file
+
+# 启动
+docker-compose up -d --scale redis=$redis_num || SIGINT_handler
+echo "create redis cluster success"
+
+# 获取redis集群每个节点的ip, 传给webpos的集群
+redis_ip_list=""
+cluster_command="redis-cli --cluster create "
+for i in $(seq 1 $redis_num); do
+	server_name=${COMPOSE_PROJECT_NAME}_redis_$i
+
+	# 获取ip地址
+	ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $server_name)
+
+	if [ $? -ne 0 ]; then
+		# 失败就退出 (可能会因为docker权限问题不能执行查询命令)
+		echo "get ip address for $server_name fail"
+		SIGINT_handler
+	fi
+
+	ip="$ip:6379"
+	if [ "$redis_ip_list" == "" ]; then # 如果是第一个元素就直接赋值, 否则中间加逗号隔开
+		redis_ip_list=$ip
+	else
+		redis_ip_list="$redis_ip_list,$ip"
+	fi
+	cluster_command="$cluster_command $ip" # 创建集群的命令都用逗号隔开
+done
+
+# todo: delete it
+redis_ip_list="192.168.147.17"
+echo "redis ip address list = $redis_ip_list"
+
+# todo: 修改脚本使集群创建成功
+# 在第一个docker节点执行创建命令
+# docker exec ${COMPOSE_PROJECT_NAME}_redis_1 $cluster_command || SIGINT_handler
+
+#------------------------------------------------启动webpos集群----------------------
+echo "creating webpos cluster"
+
+# 设置部署的集群的名称前缀和使用的配置文件
+export COMPOSE_PROJECT_NAME="webpos_web"
+export COMPOSE_FILE=$web_yml_file
+
+# 配置部署的yml里面的环境变量
+export WEBPOS_VERSION="v0.2.0"
+export CACHE_ENABLE=$cache_enable
+export REDIS_NODES=$redis_ip_list
+
+# 启动
+docker-compose up -d --scale web=$web_num || SIGINT_handler
+# echo "create webpos cluster success"
+
+
+#------------------------------------------------根据webpos集群配置haproxy-------------
+# 根据扩展个数生成相应的haproxy的配置文件, 先复制模板文件, 然后添加server
 cp $haproxy_template_cfg $haproxy_cfg
-for i in $(seq 1 $scale); do
-	server_name=deploy_webpos_$i
+
+for i in $(seq 1 $web_num); do
+	server_name=${COMPOSE_PROJECT_NAME}_web_$i
 
 	# 获取ip地址
 	ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $server_name)
@@ -86,8 +192,8 @@ for i in $(seq 1 $scale); do
 	echo -e "\tserver $server_name $ip:8080" >> $haproxy_cfg
 done
 
-echo "generated haproxy config file:"
-cat $haproxy_cfg
+echo "generate haproxy config file success"
 
+#------------------------------------------------启动haproxy------------------------
 echo -e "\nrunning haproxy......   ctrl^c to stop"
 haproxy -f $haproxy_cfg || SIGINT_handler

@@ -5,12 +5,14 @@
 1. 完善前后端, 实现所有按钮的功能和对应的controller
 2. 实现使用jib构建镜像webpos:uncached (没有缓存版本)
 3. 配置haproxy的脚本与docker-compose的配置文件, 能够实现一步部署: ```deploy/run.sh scale_num``` 即可开启```scale_num```个水平扩展集群(haproxy是在宿主机运行的).
+4. 使用redis集群做会话的共享
+5. 实现redis集群自动部署, 并且与原先webpos的部署整合
+6. 实现通过环境变量控制缓存的开启, 构建webpos:v0.2.0镜像
+7. 脚本整合, 能够通过参数控制三种情况的搭建, 如 ```deploy/run.sh web=2 redis=1 cache=true```
 
-下一步:
-1. 实现会话的共享
-2. 实现缓存的管理, 并且构建镜像webpos:cached (有缓存版本), 同时更新配置相应的docker-compose配置文件, 更新```run.sh```, 增加第二个参数(true/false)是否开启带缓存的集群
-3. 三种情况的测试
-
+接下来要做的:
+1. 当前只实现了1个redis的情况, redis在docker下创建集群的脚本还未成功, 需要修改
+2. 实现三个类别的测试
 
 <hr/>
 <hr/>

@@ -14,7 +14,6 @@
     <description>Demo project for Scalable Web</description>
     <properties>
         <java.version>11</java.version>
-        <h2.version>2.1.210</h2.version>
     </properties>
     <dependencies>
         <dependency>
@@ -26,25 +25,16 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.session</groupId>
-            <artifactId>spring-session-jdbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <artifactId>spring-session-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -75,7 +65,7 @@
                     </from>
                     <!-- 指定生成的镜像名称标签 -->
                     <to>
-                        <image>yanghaku/webpos:uncached</image>
+                        <image>yanghaku/webpos:v0.2.0</image>
                     </to>
                     <container>
                         <!-- 创建时间为当前的系统的时间戳 -->

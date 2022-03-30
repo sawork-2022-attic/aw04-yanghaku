@@ -5,6 +5,7 @@ import com.example.webpos.model.Cart;
 import com.example.webpos.model.Item;
 import com.example.webpos.model.Product;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -48,6 +49,7 @@ public class PosServiceImp implements PosService, Serializable {
     }
 
     @Override
+    @Cacheable(value = "productsAll")
     public List<Product> products() {
         return posDB.getProducts();
     }
