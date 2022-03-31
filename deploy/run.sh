@@ -147,7 +147,7 @@ done
 echo "redis ip address list = $redis_ip_list"
 
 # 在第一个docker节点执行创建命令
-(docker exec ${COMPOSE_PROJECT_NAME}_redis_1 echo "yes" | $cluster_command) || SIGINT_handler
+(docker exec ${COMPOSE_PROJECT_NAME}_redis_1 bash -c "echo 'yes' | $cluster_command") || SIGINT_handler
 
 #------------------------------------------------启动webpos集群----------------------
 echo "creating webpos cluster"
