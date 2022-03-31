@@ -9,6 +9,9 @@ haproxy_template_cfg="$SHELL_FOLDER/haproxy-template.cfg"
 haproxy_cfg="$SHELL_FOLDER/haproxy.cfg"
 redis_conf_file="$SHELL_FOLDER/redis.conf"
 
+# 配置集群的前缀
+export COMPOSE_PROJECT_NAME="webpos"
+
 # 检查配置文件是否存在
 if [ ! -f "$haproxy_template_cfg" ];then
 	echo "file $haproxy_template_cfg not exist"
@@ -23,14 +26,14 @@ if [ ! -f "$web_yml_file" ];then
 	exit -1
 fi
 
-# 解析参数 (redis=, web=, cache=)   默认值: (redis=1, web=1, cache=false)
-redis_num=1
+# 解析参数 (redis=, web=, cache=)   默认值: (redis=3, web=1, cache=false)
+redis_num=3
 web_num=1
 cache_enable="false"
 
 print_help(){
 	echo "usage $0 [redis=number] [web=number] [cache=true/false]"
-	echo "default value: redis=1, web=1, cache=false"
+	echo "default value: redis=$redis_num, web=$web_num, cache=$cache_enable"
 	exit -1
 }
 
@@ -62,8 +65,8 @@ for arg in $*; do
 		if [ $? -ne 0 ]; then
 			echo "scale_number for redis must be a number"
 			print_help
-		elif [ $val -le 0 ]; then
-			echo "scale_number for redis must greater than 0"
+		elif [ $val -le 2 ]; then
+			echo "scale_number for redis must greater than 2"
 			print_help
 		fi
 		redis_num=$val
@@ -84,9 +87,6 @@ for arg in $*; do
 
 done
 
-# todo: delete it
-redis_num=1
-
 echo "parse success! (redis=$redis_num, web=$web_num, cache=$cache_enable)"
 
 
@@ -95,12 +95,10 @@ trap 'SIGINT_handler' INT
 SIGINT_handler(){
 	echo -e "\nquit"
 
-	export COMPOSE_PROJECT_NAME="webpos_redis"
-	export COMPOSE_FILE=$redis_yml_file
+	export COMPOSE_FILE=$web_yml_file
 	docker-compose down
 
-	export COMPOSE_PROJECT_NAME="webpos_web"
-	export COMPOSE_FILE=$web_yml_file
+	export COMPOSE_FILE=$redis_yml_file
 	docker-compose down
 
 	if [ -f $haproxy_cfg ]; then
@@ -112,8 +110,7 @@ SIGINT_handler(){
 #------------------------------------------------启动redis集群-----------------------
 echo "creating redis cluster"
 
-# 设置部署的集群的名称前缀和使用的配置文件
-export COMPOSE_PROJECT_NAME="webpos_redis"
+# 设置部署的集群使用的配置文件
 export COMPOSE_FILE=$redis_yml_file
 
 # 设置redis的yml的环境变量
@@ -147,19 +144,15 @@ for i in $(seq 1 $redis_num); do
 	cluster_command="$cluster_command $ip" # 创建集群的命令都用逗号隔开
 done
 
-# todo: delete it
-redis_ip_list="192.168.147.17"
 echo "redis ip address list = $redis_ip_list"
 
-# todo: 修改脚本使集群创建成功
 # 在第一个docker节点执行创建命令
-# docker exec ${COMPOSE_PROJECT_NAME}_redis_1 $cluster_command || SIGINT_handler
+(docker exec ${COMPOSE_PROJECT_NAME}_redis_1 echo "yes" | $cluster_command) || SIGINT_handler
 
 #------------------------------------------------启动webpos集群----------------------
 echo "creating webpos cluster"
 
 # 设置部署的集群的名称前缀和使用的配置文件
-export COMPOSE_PROJECT_NAME="webpos_web"
 export COMPOSE_FILE=$web_yml_file
 
 # 配置部署的yml里面的环境变量

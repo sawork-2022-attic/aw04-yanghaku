@@ -3,7 +3,6 @@ version: '3'
 services:
     redis:
         image: redis
-        network_mode: host
         deploy:
             restart_policy:
                 condition: on-failure
@@ -13,8 +12,14 @@ services:
                 limits:
                     cpus: 1
                     memory: 2G
+        command: redis-server /etc/redis/redis.conf
         volumes:
           - type: bind
             read_only: true
             source: ${REDIS_CONF}
             target: /etc/redis/redis.conf
+        networks: # 指定网络名, 使redis和webpos都在同一个网络命名空间下
+            - webpos
+
+networks:
+    webpos:

@@ -3,6 +3,8 @@ package com.example.webpos.web;
 import com.example.webpos.biz.PosService;
 import com.example.webpos.model.Cart;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class PosController {
+    static final Logger logger = LoggerFactory.getLogger(PosController.class);
 
     private PosService posService;
 
@@ -27,9 +30,18 @@ public class PosController {
     }
 
     private String refreshModel(Model model) {
+        long start = System.currentTimeMillis();
         model.addAttribute("products", posService.products());
+        logger.info("get db's products token " + (System.currentTimeMillis() - start) + " ms");
+
+        start = System.currentTimeMillis();
         model.addAttribute("cart", cart);
+        logger.info("get session's cart token " + (System.currentTimeMillis() - start) + " ms");
+
+        start = System.currentTimeMillis();
         model.addAttribute("total", cart.getTotal());
+        logger.info("get cart total token " + (System.currentTimeMillis() - start) + " ms");
+
         return "index";
     }
 

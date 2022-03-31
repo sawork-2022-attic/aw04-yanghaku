@@ -4,6 +4,9 @@ import com.example.webpos.db.PosDB;
 import com.example.webpos.model.Cart;
 import com.example.webpos.model.Item;
 import com.example.webpos.model.Product;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
@@ -14,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class PosServiceImp implements PosService, Serializable {
+    static final Logger logger = LoggerFactory.getLogger(PosServiceImp.class);
 
     private PosDB posDB;
 
@@ -51,6 +55,10 @@ public class PosServiceImp implements PosService, Serializable {
     @Override
     @Cacheable(value = "productsAll")
     public List<Product> products() {
-        return posDB.getProducts();
+        logger.info("No cache or cache missing, generate products from jd");
+        long start = System.currentTimeMillis();
+        List<Product> product = posDB.getProducts();
+        logger.info("generate products token " + (System.currentTimeMillis() - start) + " ms");
+        return product;
     }
 }

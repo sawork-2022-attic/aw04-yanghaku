@@ -16,3 +16,9 @@ services:
             # 设置环境变量
             - CACHE_ENABLE=${CACHE_ENABLE}
             - REDIS_NODES=${REDIS_NODES}
+        networks:
+            - webpos_webpos
+
+networks:
+    webpos_webpos:
+        external: true
