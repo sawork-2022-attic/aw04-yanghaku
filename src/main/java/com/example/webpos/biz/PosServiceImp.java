@@ -55,7 +55,7 @@ public class PosServiceImp implements PosService, Serializable {
     @Override
     @Cacheable(value = "productsAll")
     public List<Product> products() {
-        logger.info("No cache or cache missing, generate products from jd");
+        logger.info("No cache or cache missing, generate products from posDB");
         long start = System.currentTimeMillis();
         List<Product> product = posDB.getProducts();
         logger.info("generate products token " + (System.currentTimeMillis() - start) + " ms");

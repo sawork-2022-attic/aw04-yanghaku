@@ -37,7 +37,7 @@ deploy/run.sh web=110 redis=120 cache=true
 #### webpos项目打包
 
 通过环境变量注入redis集群的节点信息, 注入是否使用cache, 这样就可以实现一个多用了.
-当前已经上传dockerhub: https://hub.docker.com/repository/docker/yanghaku/webpos , tag为v0.2.0
+当前已经上传dockerhub: https://hub.docker.com/repository/docker/yanghaku/webpos , tag为v0.3.0
 可以直接```docker pull yanghaku/webpos:v0.2.0```
 
 #### 容器集群创建
@@ -156,6 +156,7 @@ Removing network webpos_webpos
 7. 脚本整合, 能够通过参数控制三种情况的搭建, 如 ```deploy/run.sh web=2 redis=1 cache=true```
 8. 部署并且测试了docker中bridge网络的集群 (**普大喜奔, 终于能跑了!**)
 9. 完善webpos, 提高健壮性并且增加了日志记录时间消耗
+10. (更新到0.3.0) 使用静态内部类, 防止多线程访问posDB的数据竞争以及大量访问jd的时候被ban. 确保**只有1次访问jd**, 其他的线程等待结果即可.
 
 接下来要做的:
 1. 实现三个类别的压力测试比较

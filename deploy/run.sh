@@ -156,7 +156,7 @@ echo "creating webpos cluster"
 export COMPOSE_FILE=$web_yml_file
 
 # 配置部署的yml里面的环境变量
-export WEBPOS_VERSION="v0.2.0"
+export WEBPOS_VERSION="v0.3.0"
 export CACHE_ENABLE=$cache_enable
 export REDIS_NODES=$redis_ip_list
 

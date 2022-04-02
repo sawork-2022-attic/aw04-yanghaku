@@ -65,7 +65,7 @@
                     </from>
                     <!-- 指定生成的镜像名称标签 -->
                     <to>
-                        <image>yanghaku/webpos:v0.2.0</image>
+                        <image>yanghaku/webpos:v0.3.0</image>
                     </to>
                     <container>
                         <!-- 创建时间为当前的系统的时间戳 -->

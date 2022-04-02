@@ -38,9 +38,7 @@ public class PosController {
         model.addAttribute("cart", cart);
         logger.info("get session's cart token " + (System.currentTimeMillis() - start) + " ms");
 
-        start = System.currentTimeMillis();
         model.addAttribute("total", cart.getTotal());
-        logger.info("get cart total token " + (System.currentTimeMillis() - start) + " ms");
 
         return "index";
     }
