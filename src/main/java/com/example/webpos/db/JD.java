@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Repository
+// @Repository
 public class JD implements PosDB {
 	static final Logger logger = LoggerFactory.getLogger(PosDB.class);
 

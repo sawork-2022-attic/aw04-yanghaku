@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.webpos.dao.ProductMapper">
+  <resultMap id="BaseResultMap" type="com.example.webpos.model.Product">
+    <id column="ID" jdbcType="VARCHAR" property="id" />
+    <result column="NAME" jdbcType="VARCHAR" property="name" />
+    <result column="PRICE" jdbcType="DOUBLE" property="price" />
+    <result column="IMAGE" jdbcType="VARCHAR" property="image" />
+  </resultMap>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
+    delete from product
+    where ID = #{id,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="com.example.webpos.model.Product">
+    insert into product (ID, NAME, PRICE, 
+      IMAGE)
+    values (#{id,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{price,jdbcType=DOUBLE}, 
+      #{image,jdbcType=VARCHAR})
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com.example.webpos.model.Product">
+    update product
+    set NAME = #{name,jdbcType=VARCHAR},
+      PRICE = #{price,jdbcType=DOUBLE},
+      IMAGE = #{image,jdbcType=VARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <select id="selectByPrimaryKey" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select ID, NAME, PRICE, IMAGE
+    from product
+    where ID = #{id,jdbcType=VARCHAR}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap">
+    select ID, NAME, PRICE, IMAGE
+    from product
+  </select>
+</mapper>
